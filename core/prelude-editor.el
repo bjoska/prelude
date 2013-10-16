@@ -104,8 +104,14 @@ Will only occur if prelude-whitespace is also enabled."
 ;; smart pairing for all
 (require 'smartparens-config)
 (setq sp-base-key-bindings 'paredit)
-(setq sp-cancel-autoskip-on-backward-movement nil)
-(smartparens-global-mode +1)
+(setq sp-autoskip-closing-pair 'always)
+(setq sp-hybrid-kill-entire-symbol nil)
+(sp-use-paredit-bindings)
+
+(show-smartparens-global-mode +1)
+
+;; disable annoying blink-matching-paren
+(setq blink-matching-paren nil)
 
 ;; diminish keeps the modeline tidy
 (require 'diminish)
@@ -155,31 +161,22 @@ Will only occur if prelude-whitespace is also enabled."
              (file-writable-p buffer-file-name))
     (save-buffer)))
 
-(defadvice switch-to-buffer (before save-buffer-now activate)
-  "Invoke `prelude-auto-save-command' before `switch-to-window'."
-  (prelude-auto-save-command))
-(defadvice other-window (before other-window-now activate)
-  "Invoke `prelude-auto-save-command' before `other-window'."
-  (prelude-auto-save-command))
-(defadvice windmove-up (before other-window-now activate)
-  "Invoke `prelude-auto-save-command' before `windmove-up'."
-  (prelude-auto-save-command))
-(defadvice windmove-down (before other-window-now activate)
-  "Invoke `prelude-auto-save-command' before `windmove-down'."
-  (prelude-auto-save-command))
-(defadvice windmove-left (before other-window-now activate)
-  "Invoke `prelude-auto-save-command' before `windmove-left'."
-  (prelude-auto-save-command))
-(defadvice windmove-right (before other-window-now activate)
-  "Invoke `prelude-auto-save-command' before `windmove-right'."
-  (prelude-auto-save-command))
+(defmacro advise-commands (advice-name commands &rest body)
+  "Apply advice named ADVICE-NAME to multiple COMMANDS.
+
+The body of the advice is in BODY."
+  `(progn
+     ,@(mapcar (lambda (command)
+                 `(defadvice ,command (before ,(intern (concat (symbol-name command) "-" advice-name)) activate)
+                    ,@body))
+               commands)))
+
+;; advise all window switching functions
+(advise-commands "auto-save"
+                 (switch-to-buffer other-window windmove-up windmove-down windmove-left windmove-right)
+                 (prelude-auto-save-command))
 
 (add-hook 'mouse-leave-buffer-hook 'prelude-auto-save-command)
-
-;; show-paren-mode: subtle highlighting of matching parens (global-mode)
-(require 'paren)
-(setq show-paren-style 'parenthesis)
-(show-paren-mode +1)
 
 ;; highlight the current line
 (global-hl-line-mode +1)
@@ -220,7 +217,8 @@ Will only occur if prelude-whitespace is also enabled."
       ido-use-filename-at-point 'guess
       ido-max-prospects 10
       ido-save-directory-list-file (expand-file-name "ido.hist" prelude-savefile-dir)
-      ido-default-file-method 'selected-window)
+      ido-default-file-method 'selected-window
+      ido-auto-merge-work-directories-length -1)
 (ido-mode +1)
 (ido-ubiquitous-mode +1)
 ;; smarter fuzzy matching for ido
@@ -286,6 +284,11 @@ Will only occur if prelude-whitespace is also enabled."
 (setq projectile-cache-file (expand-file-name  "projectile.cache" prelude-savefile-dir))
 (projectile-global-mode t)
 (diminish 'projectile-mode "Prjl")
+
+;; anzu-mode enhances isearch by showing total matches and current match position
+(require 'anzu)
+(diminish 'anzu-mode)
+(global-anzu-mode)
 
 (require 'helm-misc)
 (require 'helm-projectile)
