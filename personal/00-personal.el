@@ -30,6 +30,9 @@
 (global-auto-complete-mode t)
 (auto-complete-mode t)
 
+;;; Erlang root dir
+(setq erlang-root-dir "/usr/lib/erlang")
+
 ;; Custom Keyboard Bindings
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Just in place to ensure I stop using the arrow keys.
@@ -39,7 +42,8 @@
 ;; (global-unset-key (kbd "<down>"))
 
 ;; In place to make me use the "shift-[arrow key]" instead of "C-x o".
-(global-unset-key (kbd "C-x o"))
+;; changed to enable nav in terminal.
+;; (global-unset-key (kbd "C-x o"))
 
 ;; Slowly resetting everything back to default
 (global-set-key (kbd "<up>") 'previous-line)
