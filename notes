@@ -1,0 +1,99 @@
+# send_confirmation error:
+ApplicationLog.error("Order:send_confirmation", "Failed to send orderconfirmation for order #{self.id}, #{self.cart.customer.email}. #{e.message}")
+
+# send_delivery_status error:
+ApplicationLog.error("Order:send_delivery_status", "Failed to send delivery status for order #{self.id}, #{self.cart.customer.email}. #{e.message}")
+
+# send_pickup_email error:
+ApplicationLog.error("Order:send_pickup_email!", "Failed to send email pickup notification for order #{self.id}, #{self.cart.customer.email}. #{e.message}")
+
+# send_recommendation! error:
+ApplicationLog.error("FriendRecommendation::send_recommendation", "Failed to send friend recommendation with id #{self.id}. #{e.message}")
+
+# send_temporary_pricing_disabled_email error:
+ApplicationLog.error("TemporaryPricing:send_send_temporary_pricing_disabled_mail", "send_temporary_pricing_disabled_mail failed: #{e.message}")
+
+/bin/su - rails -c "GEM_PATH=/var/www/tretti/shared/bundle/ruby/1.9.1:/usr/local/lib/ruby/gems/1.9.1 bundle exec resque-pool -d \
+    -a tretti -p /var/run/tretti_resque -E staging --config /var/www/tretti/current/config/resque/pool.yml"
+
+
+      SELECT i.sku_backend, it.price, b.name AS b_name, c2.name_plural AS category_name_plural, c3.name_plural AS sub_category_name_plural,  sales.quantity, sales.amount
+      FROM items i
+      JOIN item_translations it ON it.item_id = i.id AND it.country_id = #{country_id.to_i}
+      JOIN (SELECT cl.item_id, sum(quantity) AS quantity, SUM(quantity*(price-ISNULL(discount,0))) AS amount
+          FROM cart_lines cl
+          JOIN carts c ON c.id = cl.cart_id
+          JOIN orders o ON o.cart_id = c.id
+          JOIN customers cu ON cu.id = c.customer_id
+          JOIN addresses ia ON ia.id = cu.invoice_address_id
+          WHERE o.created_at > '#{from_date.strftime("%Y%m%d")}' AND o.created_at < '#{to_date.strftime("%Y%m%d")}'
+          AND o.order_status_id BETWEEN 180 AND 189 #{country_condition}
+          GROUP BY cl.item_id) sales ON sales.item_id = i.id
+      LEFT JOIN site_categories c3 ON c3.category_id = i.category_id AND c3.country_id = #{country_id.to_i}
+      LEFT JOIN site_categories c2 ON c2.id = c3.parent_id
+      LEFT JOIN site_categories c1 ON c1.id = c2.parent_id
+      LEFT JOIN brands b ON b.id = i.brand_id
+      WHERE i.item_type_id = #{ItemType::PRODUCT}
+
+
+http://www.tretti.se/m/redirect/td?tduid=fb2f4f7aa554ec34825463ea20b3c601&url=http%253A%252F%252Fwww.tretti.se%252F%253Futm_source%253Dtradedoubler%2526utm_medium%253Dcpo%2526utm_campaign%253Dtradedoubler_1745654
+
+http://staging.tretti.se/m/redirect/td?tduid=fb2f4f7aa554ec34825463ea20b3c601&url=http%253A%252F%252Fstaging.tretti.se%252F%253Futm_source%253Dtradedoubler%2526utm_medium%253Dcpo%2526utm_campaign%253Dtradedoubler_1745654
+
+localhost:3000/m/redirect/td?tduid=fb2f4f7aa554ec34825463ea20b3c601&url=http%253A%252F%252Flocal.tretti.se:3000/se/mobile/sport-och-fritid%252F%253Futm_source%253Dtradedoubler%2526utm_medium%253Dcpo%2526utm_campaign%253Dtradedoubler_1745654
+
+URI.unescape URI.unescape(request.fullpath.split('url=')[1])
+
+
+row = eval_column_code(partner_feed_column) do |eval_column|
+stripped = StringHelper.strip_html(eval_column)
+
+StringHelper.strip_from_new_line(stripped).
+gsub(column_separator, ' ').gsub(row_separator, ' ')
+end
+
+binding.pry
+
+
+def eval_column_code(partner_feed_column, &blk)
+evaluated = eval(partner_feed_column.feed_column.code).to_s
+
+if block_given?
+blk.call(evaluated)
+else
+evaluated
+end
+end
+
+
+
+
+
+
+# Generates a temp file and then overwrites the destination when this
+# has been completed.
+#
+# @return [Integer] a 0 is returned upon success.
+def generate_cache
+destination_path_string = File.
+join(page_cache_dir, "/#{self.country.iso_code}#{full_url}")
+
+path_string = destination_path_string + '.tmp'
+
+FileUtils.mkpath(File.dirname(path_string))
+
+File.open(path_string, 'wb') do |f|
+f.write(feed)
+end
+
+FileUtils.move(path_string, destination_path_string)
+end
+
+
+SiteItem.where do |q|
+(q.item_translation_status_id == ItemTranslationStatus::VISIBLE) &
+(q.sub_category_id != Category::ACCESSORY_CATEGORY) &
+(q.category_id != 73) &
+(q.country_id == 2) &
+(!q.isnull(q.block_from_partner_feed, false))
+end.includes(:country).limit(10)
